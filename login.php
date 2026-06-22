@@ -1,71 +1,90 @@
 <?php
 session_start();
-require_once __DIR__ . '/config/database.php';
 
-$erro = "";
+// Em vez de chamar o index.php inteiro, criamos a conexão direta aqui para evitar conflito de rotas
+$host = 'localhost';
+$db   = 'atendelab';
+$user = 'root';
+$pass = ''; // Se o seu MySQL tiver senha no XAMPP, coloque ela aqui dentro das aspas
+$charset = 'utf8mb4';
 
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    die("Erro ao conectar no banco de dados: " . $e->getMessage());
+}
+
+$mensagem = "";
+
+// Verifica se o usuário clicou no botão "Entrar"
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $senha = $_POST['senha'];
+    $email = $_POST['email'] ?? '';
+    $senha = $_POST['senha'] ?? '';
 
-    if ($email && $senha) {
-        // RNF06: consulta usando PDO preparada contra SQL Injection
-        $stmt = $pdo->prepare("SELECT id, nome, senha, status FROM usuarios WHERE email = :email LIMIT 1");
-        $stmt->execute(['email' => $email]);
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!empty($email) && !empty($senha)) {
+        try {
+            // Busca o usuário pelo e-mail
+            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email AND status = 'Ativo' LIMIT 1");
+            $stmt->execute([':email' => $email]);
+            $usuario = $stmt->fetch();
 
-        // RNF05: validação com password_hash 
-        if ($usuario && password_verify($senha, $usuario['senha'])) {
-            
-            // RN09: verificar se o usuário está ativo
-            if ($usuario['status'] === 'ativo') {
-                $_SESSION['usuario_id'] = $usuario['id'];
-                $_SESSION['usuario_nome'] = $usuario['nome'];
-                $_SESSION['usuario_status'] = $usuario['status'];
-                
-                header("Location: dashboard.php");
-                exit();
+            if ($usuario) {
+                // Compara a senha convertendo para MD5
+                if (md5($senha) === $usuario['senha']) {
+                    $_SESSION['usuario_id'] = $usuario['id'];
+                    $_SESSION['usuario_nome'] = $usuario['nome'];
+
+                    // Login com sucesso! Vai para o esqueleto do dashboard
+                    header("Location: dashboard.php");
+                    exit;
+                } else {
+                    $mensagem = "Senha incorreta!";
+                }
             } else {
-                $erro = "Usuário inativo. Procure o administrador.";
+                $mensagem = "Usuário não encontrado ou inativo!";
             }
-        } else {
-            $erro = "E-mail ou senha incorretos.";
+        } catch (PDOException $e) {
+            $mensagem = "Erro no banco: " . $e->getMessage();
         }
     } else {
-        $erro = "Preencha todos os campos."; // RN12
+        $mensagem = "Preencha todos os campos!";
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Atendelab</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Login - ATENDELAB</title>
 </head>
-<body class="bg-light d-flex align-items-center vh-100">
-    <div class="container" style="max-width: 400px;">
-        <div class="card shadow">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">Atendelab</h3>
-                
-                <?php if (!empty($erro)): ?>
-                    <div class="alert alert-danger"><?= $erro ?></div>
-                <?php endif; ?>
+<body>
 
-                <form method="POST" action="login.php">
-                    <div class="mb-3">
-                        <label class="form-label">E-mail</label>
-                        <input type="email" name="email" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Senha</label>
-                        <input type="password" name="senha" class="form-control" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
-                </form>
-            </div>
+    <h1>Acessar o Sistema (Login)</h1>
+
+    <?php if (!empty($mensagem)): ?>
+        <p style="color: red;"><strong>⚠️ <?= $mensagem ?></strong></p>
+    <?php endif; ?>
+
+    <form action="login.php" method="POST">
+        <div>
+            <label for="email">E-mail:</label><br>
+            <input type="email" id="email" name="email" required placeholder="admin@atendelab.com">
         </div>
-    </div>
+        <br>
+        <div>
+            <label for="senha">Senha:</label><br>
+            <input type="password" id="senha" name="senha" required placeholder="Digite sua senha">
+        </div>
+        <br>
+        <button type="submit">Entrar</button>
+    </form>
+
 </body>
 </html>

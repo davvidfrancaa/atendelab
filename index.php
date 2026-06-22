@@ -1,0 +1,16 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Carrega APENAS o banco de dados globalmente
+require_once __DIR__ . '/config/database.php';
+
+// A autenticação NÃO deve ficar aqui!
+
+// Carrega as rotas
+require_once __DIR__ . '/routes.php';

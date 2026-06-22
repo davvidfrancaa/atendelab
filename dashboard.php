@@ -1,91 +1,122 @@
 <?php
-// para protecao da pagina só entra quem estiver logado e ativo conforme RN01, RN09 e RF04
-require_once __DIR__ . '/config/autenticacao.php';
-require_once __DIR__ . '/config/database.php';
+session_start();
 
-// RF13: busca indicadores rápidos no banco de dados 
+// Conexão direta com o banco para o esqueleto rodar de forma isolada e limpa
+$host = 'localhost';
+$db   = 'atendelab';
+$user = 'root';
+$pass = ''; 
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
 try {
-    // total de pessoas atendidas ativdas RN11)
-    $stmtPessoas = $pdo->query("SELECT COUNT(*) FROM pessoas WHERE status = 'ativo'");
-    $totalPessoas = $stmtPessoas->fetchColumn();
-
-    // total de andamento em aberto RN05
-    $stmtAtendimentos = $pdo->query("SELECT COUNT(*) FROM atendimentos WHERE status IN ('aberto', 'em_andamento')");
-    $atendimentosAtivos = $stmtAtendimentos->fetchColumn();
-} catch (PDOException $e) {
-    // se as tabelas ainda não existirem, define como zero para não quebrar a tela
-    $totalPessoas = 0;
-    $atendimentosAtivos = 0;
+    $pdo = new PDO($dsn, $user, $pass, $options);
+    
+    // Busca os dados direto das tabelas para o esqueleto HTML
+    $atendimentos = $pdo->query("SELECT * FROM atendimentos ORDER BY id DESC")->fetchAll();
+    $pessoas = $pdo->query("SELECT * FROM pessoas ORDER BY id DESC")->fetchAll();
+    $tipos = $pdo->query("SELECT * FROM tipo_atendimentos ORDER BY id DESC")->fetchAll();
+} catch (\PDOException $e) {
+    die("Erro ao carregar os dados do banco: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Atendelab</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Esqueleto ATENDELAB</title>
 </head>
-<body class="bg-light">
+<body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">Atendelab</a>
-            <button class="navbar-toggler" type="text/center" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="dashboard.php">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="pessoas/index.php">Pessoas Atendidas</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="tipos/index.php">Tipos de Atendimento</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="atendimentos/index.php">Atendimentos</a>
-                    </li>
-                </ul>
-                <div class="d-flex align-items-center text-white">
-                    <span class="me-3">Olá, <strong><?= htmlspecialchars($_SESSION['usuario_nome']) ?></strong></span>
-                    <a href="logout.php" class="btn btn-outline-danger btn-sm">Sair (Logout)</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <h1>Esqueleto do Sistema - Dados do Banco</h1>
+    <p>Olá, <strong><?= $_SESSION['usuario_nome'] ?? 'Usuário Autenticado' ?></strong>! Você está logado no sistema.</p>
+    <p><a href="login.php">🚪 Sair / Voltar para o Login</a></p>
 
-    <div class="container mt-4">
-        <div class="row mb-4">
-            <div class="col">
-                <h2 class="h3 mb-0 text-gray-800">Painel Geral (Dashboard)</h2>
-                <p class="text-muted">Bem-vindo ao sistema de gerenciamento de atendimentos.</p>
-            </div>
-        </div>
+    <hr>
 
-        <div class="row g-4">
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card border-start border-primary border-4 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Pessoas Cadastradas</div>
-                        <div class="h2 mb-0 font-weight-bold text-gray-800"><?= $totalPessoas ?></div>
-                    </div>
-                </div>
-            </div>
+    <h2>Tabela: Atendimentos</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>ID</th>
+                <th>Pessoa ID</th>
+                <th>Tipo ID</th>
+                <th>Status</th>
+                <th>Observação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($atendimentos)): ?>
+                <tr><td colspan="5">Nenhum atendimento registrado.</td></tr>
+            <?php else: ?>
+                <?php foreach ($atendimentos as $at): ?>
+                <tr>
+                    <td><strong><?= $at['id'] ?></strong></td>
+                    <td><?= $at['pessoa_id'] ?></td>
+                    <td><?= $at['tipo_atendimento'] ?></td>
+                    <td><?= $at['status'] ?></td>
+                    <td><?= $at['observacao'] ?? '-' ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
 
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card border-start border-warning border-4 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Atendimentos Ativos</div>
-                        <div class="h2 mb-0 font-weight-bold text-gray-800"><?= $atendimentosAtivos ?></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <h2>Tabela: Pessoas</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Documento</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($pessoas)): ?>
+                <tr><td colspan="4">Nenhuma pessoa registrada.</td></tr>
+            <?php else: ?>
+                <?php foreach ($pessoas as $p): ?>
+                <tr>
+                    <td><strong><?= $p['id'] ?></strong></td>
+                    <td><?= $p['nome'] ?></td>
+                    <td><?= $p['documento'] ?></td>
+                    <td><?= $p['status'] ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <h2>Tabela: Tipos de Atendimento</h2>
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+            <tr style="background-color: #eee;">
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Descrição</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($tipos)): ?>
+                <tr><td colspan="3">Nenhum tipo cadastrado.</td></tr>
+            <?php else: ?>
+                <?php foreach ($tipos as $t): ?>
+                <tr>
+                    <td><strong><?= $t['id'] ?></strong></td>
+                    <td><?= $t['nome'] ?></td>
+                    <td><?= $t['descricao'] ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
 </body>
 </html>
