@@ -1,11 +1,11 @@
 <?php
 session_start();
 
-// Em vez de chamar o index.php inteiro, criamos a conexão direta aqui para evitar conflito de rotas
+
 $host = 'localhost';
 $db   = 'atendelab';
 $user = 'root';
-$pass = ''; // Se o seu MySQL tiver senha no XAMPP, coloque ela aqui dentro das aspas
+$pass = ''; 
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

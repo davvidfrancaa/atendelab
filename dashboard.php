@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// Conexão direta com o banco para o esqueleto rodar de forma isolada e limpa
 $host = 'localhost';
 $db   = 'atendelab';
 $user = 'root';
@@ -18,7 +17,6 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
     
-    // Busca os dados direto das tabelas para o esqueleto HTML
     $atendimentos = $pdo->query("SELECT * FROM atendimentos ORDER BY id DESC")->fetchAll();
     $pessoas = $pdo->query("SELECT * FROM pessoas ORDER BY id DESC")->fetchAll();
     $tipos = $pdo->query("SELECT * FROM tipo_atendimentos ORDER BY id DESC")->fetchAll();

@@ -7,10 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Carrega APENAS o banco de dados globalmente
 require_once __DIR__ . '/config/database.php';
 
-// A autenticação NÃO deve ficar aqui!
 
-// Carrega as rotas
 require_once __DIR__ . '/routes.php';

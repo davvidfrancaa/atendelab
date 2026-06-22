@@ -1,5 +1,5 @@
 <?php
-// Aponta corretamente para a pasta models na raiz
+
 require_once __DIR__ . '/../models/usuario.php';
 
 class UsuariosController {
@@ -10,7 +10,6 @@ class UsuariosController {
         $this->pdo = $pdo;
     }
 
-    // Método exigido para listar os dados em JSON
     public function listar(): void {
         header("Content-Type: application/json; charset=utf-8");
         try {
