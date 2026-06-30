@@ -1,5 +1,5 @@
 <?php
 
 if (!defined('BASE_URL')) {
-    define('BASE_URL', '/atendelab');
+    define('BASE_URL', '/atendelab_');
 }

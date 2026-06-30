@@ -1,13 +1,20 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+if (!defined('BASE_URL')) {
+    define('BASE_URL', '/atendelab_');
 }
+?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - ATENDELAB</title>
+</head>
+<body>
 
-require_once __DIR__ . '/config/database.php';
+    <h1>Painel do Dashboard</h1>
+    <p>Bem-vindo ao sistema ATENDELAB!</p>
+    
+    <p><a href="<?= BASE_URL ?>/public/index.php?controller=auth&action=logout">Sair do Sistema</a></p>
 
-
-require_once __DIR__ . '/routes.php';
+</body>
+</html>

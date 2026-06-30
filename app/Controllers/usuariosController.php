@@ -1,13 +1,61 @@
 <?php
 
-require_once __DIR__ . '/../models/usuario.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . 'Usuario.php';
 
-class UsuariosController {
+class usuariosController {
     private PDO $pdo;
 
     public function __construct() {
-        global $pdo; // Puxa a conexão do config/database.php
+        global $pdo;
         $this->pdo = $pdo;
+    }
+
+    public function login(): void {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = $_POST['email'] ?? '';
+            $senha = $_POST['senha'] ?? '';
+
+            if (empty($email) || empty($senha)) {
+                header('Location: /atendelab_/public/index.php?controller=auth&action=login&erro=campos');
+                exit;
+            }
+
+            try {
+                $stmt = $this->pdo->prepare("SELECT * FROM usuarios WHERE email = :email AND status = 'Ativo' LIMIT 1");
+                $stmt->execute([':email' => $email]);
+                $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($usuario) {
+                    if (md5($senha) === $usuario['senha']) {
+                        $_SESSION['usuario'] = [
+                            'id' => $usuario['id'],
+                            'nome' => $usuario['nome'],
+                            'email' => $usuario['email']
+                        ];
+                        header('Location: /atendelab_/public/index.php?controller=dashboard&action=index');
+                        exit;
+                    } else {
+                        header('Location: /atendelab_/public/index.php?controller=auth&action=login&erro=senha');
+                        exit;
+                    }
+                } else {
+                    header('Location: /atendelab_/public/index.php?controller=auth&action=login&erro=usuario');
+                    exit;
+                }
+            } catch (PDOException $e) {
+                die("Erro no banco: " . $e->getMessage());
+            }
+        }
+    }
+
+    public function logout(): void {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION = [];
+        session_destroy();
+        header('Location: /atendelab_/public/index.php?controller=auth&action=login');
+        exit;
     }
 
     public function listar(): void {
@@ -23,7 +71,6 @@ class UsuariosController {
         }
     }
 
-    // Método para buscar apenas um usuário pelo ID
     public function buscarPorId(): void {
         header("Content-Type: application/json; charset=utf-8");
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -42,7 +89,6 @@ class UsuariosController {
         echo json_encode($usuario ?: ['erro' => 'Usuário não encontrado.'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
-    // Método para criar usuário via API
     public function criar(): void {
         header("Content-Type: application/json; charset=utf-8");
         $nome   = $_POST['nome'] ?? '';
@@ -67,7 +113,6 @@ class UsuariosController {
         }
     }
 
-    // Método para atualizar
     public function atualizar(): void {
         header("Content-Type: application/json; charset=utf-8");
         $id     = $_POST['id'] ?? '';
@@ -84,7 +129,6 @@ class UsuariosController {
         }
     }
 
-    // Método para deletar
     public function excluir(): void {
         header("Content-Type: application/json; charset=utf-8");
         $id = $_POST['id'] ?? $_GET['id'] ?? '';

@@ -1,60 +1,18 @@
 <?php
-session_start();
-
-
-$host = 'localhost';
-$db   = 'atendelab';
-$user = 'root';
-$pass = ''; 
-$charset = 'utf8mb4';
-
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
-
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-} catch (\PDOException $e) {
-    die("Erro ao conectar no banco de dados: " . $e->getMessage());
+if (!defined('BASE_URL')) {
+    define('BASE_URL', '/atendelab_');
 }
 
 $mensagem = "";
-
-// Verifica se o usuário clicou no botão "Entrar"
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $senha = $_POST['senha'] ?? '';
-
-    if (!empty($email) && !empty($senha)) {
-        try {
-            // Busca o usuário pelo e-mail
-            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email AND status = 'Ativo' LIMIT 1");
-            $stmt->execute([':email' => $email]);
-            $usuario = $stmt->fetch();
-
-            if ($usuario) {
-                // Compara a senha convertendo para MD5
-                if (md5($senha) === $usuario['senha']) {
-                    $_SESSION['usuario_id'] = $usuario['id'];
-                    $_SESSION['usuario_nome'] = $usuario['nome'];
-
-                    // Login com sucesso! Vai para o esqueleto do dashboard
-                    header("Location: dashboard.php");
-                    exit;
-                } else {
-                    $mensagem = "Senha incorreta!";
-                }
-            } else {
-                $mensagem = "Usuário não encontrado ou inativo!";
-            }
-        } catch (PDOException $e) {
-            $mensagem = "Erro no banco: " . $e->getMessage();
-        }
-    } else {
+if (isset($_GET['erro'])) {
+    if ($_GET['erro'] === 'senha') {
+        $mensagem = "Senha incorreta!";
+    } elseif ($_GET['erro'] === 'usuario') {
+        $mensagem = "Usuário não encontrado ou inativo!";
+    } elseif ($_GET['erro'] === 'campos') {
         $mensagem = "Preencha todos os campos!";
+    } else {
+        $mensagem = "Usuário ou senha inválidos.";
     }
 }
 ?>
@@ -72,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p style="color: red;"><strong>⚠️ <?= $mensagem ?></strong></p>
     <?php endif; ?>
 
-    <form action="login.php" method="POST">
+    <form action="<?= BASE_URL ?>/public/index.php?controller=auth&action=login" method="POST">
         <div>
             <label for="email">E-mail:</label><br>
             <input type="email" id="email" name="email" required placeholder="admin@atendelab.com">
